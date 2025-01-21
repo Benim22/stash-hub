@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback, useState } from "react";
-
 import { useDropzone } from "react-dropzone";
 import { Button } from "@/components/ui/button";
 import { cn, convertFileToUrl, getFileType } from "@/lib/utils";
@@ -18,19 +17,28 @@ interface Props {
   className?: string;
 }
 
+interface FileState {
+  file: File;
+  uploaded: boolean;
+}
+
 const FileUploader = ({ ownerId, accountId, className }: Props) => {
   const path = usePathname();
   const { toast } = useToast();
-  const [files, setFiles] = useState<File[]>([]);
+  const [files, setFiles] = useState<FileState[]>([]);
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
-      setFiles(acceptedFiles);
+      const newFiles = acceptedFiles.map((file) => ({
+        file,
+        uploaded: false,
+      }));
+      setFiles((prevFiles) => [...prevFiles, ...newFiles]);
 
-      const uploadPromises = acceptedFiles.map(async (file) => {
+      const uploadPromises = newFiles.map(async ({ file }) => {
         if (file.size > MAX_FILE_SIZE) {
           setFiles((prevFiles) =>
-            prevFiles.filter((f) => f.name !== file.name),
+            prevFiles.filter((f) => f.file.name !== file.name),
           );
 
           return toast({
@@ -48,7 +56,9 @@ const FileUploader = ({ ownerId, accountId, className }: Props) => {
           (uploadedFile) => {
             if (uploadedFile) {
               setFiles((prevFiles) =>
-                prevFiles.filter((f) => f.name !== file.name),
+                prevFiles.map((f) =>
+                  f.file.name === file.name ? { ...f, uploaded: true } : f,
+                ),
               );
             }
           },
@@ -67,7 +77,9 @@ const FileUploader = ({ ownerId, accountId, className }: Props) => {
     fileName: string,
   ) => {
     e.stopPropagation();
-    setFiles((prevFiles) => prevFiles.filter((file) => file.name !== fileName));
+    setFiles((prevFiles) =>
+      prevFiles.filter((file) => file.file.name !== fileName),
+    );
   };
 
   return (
@@ -86,7 +98,7 @@ const FileUploader = ({ ownerId, accountId, className }: Props) => {
         <ul className="uploader-preview-list">
           <h4 className="h4 text-light-100">Uploading</h4>
 
-          {files.map((file, index) => {
+          {files.map(({ file, uploaded }, index) => {
             const { type, extension } = getFileType(file.name);
 
             return (
@@ -103,12 +115,19 @@ const FileUploader = ({ ownerId, accountId, className }: Props) => {
 
                   <div className="preview-item-name">
                     {file.name}
-                    <Image
-                      src="/assets/icons/file-loader.gif"
-                      width={80}
-                      height={26}
-                      alt="Loader"
-                    />
+                    {!uploaded ? (
+                      <Image
+                        src="/assets/icons/file-loader.gif"
+                        width={80}
+                        height={26}
+                        alt="Loader"
+                      />
+                    ) : (
+                      <span className="text-green-500 font-semibold">
+                        {" "}
+                        Uploaded
+                      </span>
+                    )}
                   </div>
                 </div>
 

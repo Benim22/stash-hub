@@ -31,7 +31,6 @@ export const uploadFile = async ({
     );
 
     const fileDocument = {
-      // Include only fields defined in the collection schema
       type: getFileType(bucketFile.name).type,
       name: bucketFile.name,
       url: constructFileUrl(bucketFile.$id),
@@ -39,7 +38,9 @@ export const uploadFile = async ({
       size: bucketFile.sizeOriginal,
       owner: ownerId,
       accountId,
-      // Remove bucketFileId if not part of the schema
+      users: [],
+      bucketField: appwriteConfig.bucketId, // Ensure this matches schema
+      // Removed bucketFileId if not part of schema
     };
 
     const newFile = await databases
